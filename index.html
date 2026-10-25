@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Crystal Defender: Protect the Magic Crystal</title>
+  <meta name="description" content="A fast-paced 2D fantasy tower defense game. Defend the Heart of Magic from waves of shadow monsters using magic bolts and elemental towers!">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient Audio Notice / Background Wrapper -->
+  <div id="game-container">
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas" width="1000" height="650"></canvas>
+
+    <!-- Top HUD Overlay (Visible during PLAYING / PREP / PAUSED) -->
+    <div id="hud-overlay" class="ui-layer hidden">
+      <div class="hud-top-bar">
+        <!-- Crystal Health Section -->
+        <div class="hud-card health-card">
+          <div class="hud-card-label">CRYSTAL HEALTH</div>
+          <div class="health-bar-container">
+            <div id="crystal-hp-bar" class="health-bar-fill" style="width: 100%;"></div>
+            <span id="crystal-hp-text" class="health-bar-text">100 / 100</span>
+          </div>
+        </div>
+
+        <!-- Wave Info Section -->
+        <div class="hud-card wave-card">
+          <div class="wave-title" id="wave-title-display">WAVE 1 / 5</div>
+          <div class="wave-subtitle" id="wave-name-display">First Threat</div>
+          <div class="enemies-badge">
+            <span class="icon">👾</span>
+            <span id="enemies-remaining-text">Enemies: 0</span>
+          </div>
+        </div>
+
+        <!-- Resources Section: Coins & Score -->
+        <div class="hud-card resources-card">
+          <div class="resource-item coins-item">
+            <span class="coin-icon">🪙</span>
+            <span id="coin-counter" class="resource-value">150</span>
+          </div>
+          <div class="resource-item score-item">
+            <span class="score-label">SCORE:</span>
+            <span id="score-counter" class="resource-value">0</span>
+          </div>
+        </div>
+
+        <!-- Control Buttons: Sound & Pause -->
+        <div class="hud-actions">
+          <button id="btn-sound-toggle" class="icon-button" title="Toggle Sound (M)">
+            <span id="sound-icon">🔊</span>
+          </button>
+          <button id="btn-pause" class="icon-button" title="Pause Game (P / Esc)">
+            <span>⏸️</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bottom HUD: Magic Bolt & Tower Shop Bar -->
+      <div class="hud-bottom-bar">
+        <!-- Magic Bolt Weapon Card -->
+        <div class="spell-card active" id="bolt-status-card" title="Click anywhere or tap monsters to fire Magic Bolt!">
+          <div class="spell-icon-wrapper">
+            <span class="spell-icon">⚡</span>
+            <div id="bolt-cooldown-overlay" class="cooldown-overlay"></div>
+          </div>
+          <div class="spell-details">
+            <span class="spell-name">Magic Bolt</span>
+            <span class="spell-hint">Click / Tap Screen to Attack</span>
+          </div>
+        </div>
+
+        <!-- Tower Selection Bar -->
+        <div class="tower-shop">
+          <div class="shop-title">DEFENSIVE TOWERS:</div>
+          <div class="tower-card" id="card-magic-tower" data-type="magic" title="Place Magic Tower (50 Coins) - Fast arcane energy bolts">
+            <div class="tower-card-icon magic-tower-icon">🔮</div>
+            <div class="tower-card-info">
+              <span class="tower-name">Magic Tower</span>
+              <span class="tower-cost">🪙 50</span>
+            </div>
+            <div class="tower-key">1</div>
+          </div>
+
+          <div class="tower-card" id="card-frost-tower" data-type="frost" title="Place Frost Tower (75 Coins) - Freezing ice shards that slow enemies">
+            <div class="tower-card-icon frost-tower-icon">❄️</div>
+            <div class="tower-card-info">
+              <span class="tower-name">Frost Tower</span>
+              <span class="tower-cost">🪙 75</span>
+            </div>
+            <div class="tower-key">2</div>
+          </div>
+        </div>
+
+        <!-- Tower Mode Cancel Button -->
+        <button id="btn-cancel-placement" class="btn btn-secondary hidden">
+          ✕ Cancel Build
+        </button>
+      </div>
+
+      <!-- Wave Preparation Banner (Appears between waves) -->
+      <div id="wave-prep-banner" class="prep-banner hidden">
+        <div class="prep-content">
+          <div class="prep-heading" id="prep-title">WAVE COMPLETE!</div>
+          <p id="prep-subtext">Prepare your defenses for the next wave...</p>
+          <div class="prep-timer">Next wave in: <strong id="prep-countdown">5</strong>s</div>
+          <button id="btn-start-wave-now" class="btn btn-primary pulse-btn">
+            ⚔️ Start Wave Now
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN MENU OVERLAY -->
+    <div id="menu-overlay" class="ui-layer">
+      <div class="menu-modal">
+        <div class="menu-brand">
+          <div class="crystal-emblem">💎</div>
+          <h1 class="game-title">CRYSTAL DEFENDER</h1>
+          <p class="game-subtitle">Protect the Heart of Magic</p>
+          <div class="game-id-tag">ID: G0431 • 2D TOWER DEFENSE</div>
+        </div>
+
+        <div class="menu-buttons">
+          <button id="btn-play-game" class="btn btn-primary btn-large glow-btn">
+            ▶ Play Game
+          </button>
+          <button id="btn-how-to-play" class="btn btn-secondary">
+            📖 How to Play
+          </button>
+          <div class="menu-sound-row">
+            <button id="btn-menu-sound" class="btn btn-outline">
+              <span id="menu-sound-icon">🔊</span> Sound: ON
+            </button>
+          </div>
+        </div>
+
+        <div class="menu-footer">
+          <div class="high-score-badge">
+            <span class="trophy-icon">🏆</span>
+            <span>Best Score: <strong id="menu-best-score">0</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOW TO PLAY MODAL -->
+    <div id="how-to-play-modal" class="modal-layer hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>📖 How to Play Crystal Defender</h2>
+          <button id="btn-close-how-to-play" class="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="guide-section">
+            <h3>🎯 The Mission</h3>
+            <p>A magical crystal lies in the center of the enchanted arena. Monsters emerge from the dark edges. If the crystal's health reaches <strong>0</strong>, magic is lost! Survive all <strong>5 waves</strong> to claim victory.</p>
+          </div>
+
+          <div class="guide-grid">
+            <div class="guide-col">
+              <h3>⚔️ Defense System</h3>
+              <ul class="guide-list">
+                <li><strong>Magic Bolt:</strong> Click or tap anywhere to shoot magical bolts directly at approaching enemies. Rapid cooldown!</li>
+                <li><strong>Build Pedestals:</strong> Click glowing stone pedestals or select a tower from the bottom shop bar to place defenses.</li>
+                <li><strong>🔮 Magic Tower (50🪙):</strong> Fires rapid arcane bolts at the nearest enemy. High damage rate.</li>
+                <li><strong>❄️ Frost Tower (75🪙):</strong> Fires freezing ice shards that deal damage and <strong>slow enemy movement by 50%</strong>.</li>
+              </ul>
+            </div>
+
+            <div class="guide-col">
+              <h3>👾 Monster Bestiary</h3>
+              <ul class="guide-list bestiary">
+                <li><span class="color-dot purple"></span> <strong>Shadow Slime:</strong> 20 HP • Slow • 5 Crystal Dmg (+10 Pts & 🪙)</li>
+                <li><span class="color-dot green"></span> <strong>Goblin Raider:</strong> 40 HP • Fast • 10 Crystal Dmg (+20 Pts & 🪙)</li>
+                <li><span class="color-dot red"></span> <strong>Dark Knight:</strong> 80 HP • Heavy Armor • 20 Crystal Dmg (+40 Pts & 🪙)</li>
+                <li><span class="color-dot boss"></span> <strong>Knight Commander (Wave 5):</strong> 250 HP • Elite Boss with aura!</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="guide-section hotkeys">
+            <h3>⌨️ Controls & Hotkeys</h3>
+            <p><strong>Mouse / Touch:</strong> Aim & Fire Magic Bolt / Select Towers & Pedestals &nbsp;|&nbsp; <strong>Keys 1 & 2:</strong> Select Towers &nbsp;|&nbsp; <strong>P / Esc:</strong> Pause &nbsp;|&nbsp; <strong>M:</strong> Toggle Sound</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-how-to-play-got-it" class="btn btn-primary">Got It! Let's Defend</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAUSE MENU OVERLAY -->
+    <div id="pause-modal" class="modal-layer hidden">
+      <div class="modal-card small-modal">
+        <h2 class="pause-title">GAME PAUSED</h2>
+        <p class="pause-desc">The magic realm is frozen in time.</p>
+        <div class="modal-btn-stack">
+          <button id="btn-resume" class="btn btn-primary">▶ Resume Game</button>
+          <button id="btn-pause-restart" class="btn btn-secondary">🔄 Restart Game</button>
+          <button id="btn-pause-sound" class="btn btn-outline">🔊 Toggle Sound</button>
+          <button id="btn-pause-menu" class="btn btn-danger">🏠 Return to Menu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GAME OVER OVERLAY -->
+    <div id="gameover-modal" class="modal-layer hidden">
+      <div class="modal-card result-modal defeat">
+        <div class="result-icon">💔</div>
+        <h2 class="result-title text-danger">CRYSTAL SHATTERED</h2>
+        <p class="result-sub">The dark horde overwhelmed the magic crystal.</p>
+
+        <div class="stats-summary">
+          <div class="stat-row">
+            <span>Final Score:</span>
+            <strong id="go-final-score">0</strong>
+          </div>
+          <div class="stat-row">
+            <span>Best Score:</span>
+            <strong id="go-best-score">0</strong>
+          </div>
+          <div class="stat-row">
+            <span>Wave Reached:</span>
+            <strong id="go-wave-reached">Wave 1</strong>
+          </div>
+          <div class="stat-row">
+            <span>Monsters Slain:</span>
+            <strong id="go-enemies-slain">0</strong>
+          </div>
+        </div>
+
+        <div class="modal-btn-stack">
+          <button id="btn-gameover-restart" class="btn btn-primary glow-btn">🔄 Try Again</button>
+          <button id="btn-gameover-menu" class="btn btn-secondary">🏠 Main Menu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VICTORY OVERLAY -->
+    <div id="victory-modal" class="modal-layer hidden">
+      <div class="modal-card result-modal victory">
+        <div class="result-icon">👑</div>
+        <h2 class="result-title text-success">VICTORY ACHIEVED!</h2>
+        <p class="result-sub">The Magic Crystal has been safeguarded! Peace returns to the realm.</p>
+
+        <div class="stats-summary">
+          <div class="stat-row highlight">
+            <span>Final Score:</span>
+            <strong id="vic-final-score">0</strong>
+          </div>
+          <div class="stat-row">
+            <span>All Waves Cleared Bonus:</span>
+            <strong class="text-gold">+200 PTS</strong>
+          </div>
+          <div class="stat-row">
+            <span>Best Score:</span>
+            <strong id="vic-best-score">0</strong>
+          </div>
+          <div class="stat-row">
+            <span>Crystal Health Preserved:</span>
+            <strong id="vic-crystal-hp">100%</strong>
+          </div>
+          <div class="stat-row">
+            <span>Total Monsters Defeated:</span>
+            <strong id="vic-enemies-slain">0</strong>
+          </div>
+        </div>
+
+        <div class="modal-btn-stack">
+          <button id="btn-victory-restart" class="btn btn-primary glow-btn">🏆 Defend Again</button>
+          <button id="btn-victory-menu" class="btn btn-secondary">🏠 Main Menu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Floating Toast Notification -->
+    <div id="toast-notification" class="toast hidden"></div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
